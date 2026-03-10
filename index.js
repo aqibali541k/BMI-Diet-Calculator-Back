@@ -15,10 +15,10 @@ const { MONGO_URL, PORT } = process.env;
 // Middlewares
 app.use(cors());
 app.use(express.json());
-
+const dns = require("node:dns");
+dns.setServers(["8.8.8.8", "8.8.4.4"]); // Google DNS
 // MongoDB connection
-mongoose
-  .connect(MONGO_URL)
+mongoose.connect(MONGO_URL)
   .then(() => {
     console.log("MongoDB has been connected successfully");
   })
@@ -29,7 +29,7 @@ mongoose
 // Routes
 app.use("/users", authRouter);
 app.use("/bmi", bmiRouter);
-app.use("/blogs", blogRouter);
+app.use("/blog", blogRouter);
 
 // Server start
 app.listen(PORT, () => {

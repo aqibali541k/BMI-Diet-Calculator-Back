@@ -2,13 +2,18 @@ const express = require("express");
 const router = express.Router();
 const fs = require("fs");
 const BMI = require("../models/bmiSchema"); // Consider BlogSchema
-const { verifyToken, isAdmin } = require("../middleware/auth");
+const verifyToken = require("../middlewares/verifyToken");
 const cloudinary = require("../middlewares/cloudinary");
 const multer = require("multer");
+const { ADMIN_EMAIL } = process.env;
+const upload = multer({ storage: multer.memoryStorage() });
+const isAdmin = (req, res, next) => {
 
-// Multer setup for temp storage
-const upload = multer({ dest: "temp/" });
-
+    if (req.user.email !== ADMIN_EMAIL) {
+        return res.status(403).json({ message: "Admin access only" });
+    }
+    next();
+};
 // Create a blog post (admin only)
 router.post(
     "/create-blog",

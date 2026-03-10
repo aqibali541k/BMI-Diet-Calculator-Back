@@ -7,18 +7,18 @@ const cloudinary = require("../middlewares/cloudinary");
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
-
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 /* ================= ADMIN MIDDLEWARE ================= */
 
 const isAdmin = (req, res, next) => {
-  if (req.user.role !== "admin") {
+
+  if (req.user.email !== ADMIN_EMAIL) {
     return res.status(403).json({ message: "Admin access only" });
   }
   next();
 };
 
 /* ================= REGISTER ================= */
-
 router.post("/register", upload.single("image"), async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -33,39 +33,38 @@ router.post("/register", upload.single("image"), async (req, res) => {
     }
 
     let role = "user";
-
-    if (email === process.env.ADMIN_EMAIL) {
-      role = "admin";
-    }
+    if (email === ADMIN_EMAIL) role = "admin";
 
     let image = "";
     let imagePublicId = "";
 
     if (req.file) {
-      const uploadResult = await new Promise((resolve, reject) => {
-        cloudinary.uploader
-          .upload_stream({ folder: "users" }, (err, result) => {
-            if (err) reject(err);
-            else resolve(result);
-          })
-          .end(req.file.buffer);
-      });
-
-      image = uploadResult.secure_url;
-      imagePublicId = uploadResult.public_id;
+      try {
+        // Convert file buffer to base64 and upload to Cloudinary
+        const fileStr = req.file.buffer.toString("base64");
+        const uploadResult = await cloudinary.uploader.upload(
+          `data:${req.file.mimetype};base64,${fileStr}`,
+          { folder: "users" }
+        );
+        image = uploadResult.secure_url;
+        imagePublicId = uploadResult.public_id;
+      } catch (err) {
+        console.error("Cloudinary upload failed:", err);
+        return res.status(500).json({ message: "Image upload failed" });
+      }
     }
 
     const user = await User.create({
       name,
       email,
-      password,
+      password, // hash handled in schema
       role,
       image,
       imagePublicId,
     });
 
     const token = jwt.sign(
-      { id: user._id, role: user.role },
+      { id: user._id, role: user.role, email: user.email },
       process.env.JWT_KEY,
       { expiresIn: "7d" }
     );
@@ -82,7 +81,6 @@ router.post("/register", upload.single("image"), async (req, res) => {
     res.status(500).json({ message: "Registration failed" });
   }
 });
-
 /* ================= LOGIN ================= */
 
 router.post("/login", async (req, res) => {
