@@ -29,7 +29,7 @@ mongoose.connect(MONGO_URL)
 // Routes
 app.use("/users", authRouter);
 app.use("/bmi", bmiRouter);
-app.use("/blog", blogRouter);
+app.use("/blogs", blogRouter);
 
 // Server start
 app.listen(PORT, () => {
