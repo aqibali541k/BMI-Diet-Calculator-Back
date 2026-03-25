@@ -9,17 +9,16 @@ const sendEmail = require("../config/SendEmail");
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL.split(",");
 /* ================= ADMIN MIDDLEWARE ================= */
 
-const isAdmin = (req, res, next) => {
 
-  if (req.user.email !== ADMIN_EMAIL) {
+const isAdmin = (req, res, next) => {
+  if (!ADMIN_EMAIL.includes(req.user.email)) {
     return res.status(403).json({ message: "Admin access only" });
   }
   next();
 };
-
 /* ================= REGISTER ================= */
 router.post("/register", upload.single("image"), async (req, res) => {
   try {
@@ -35,7 +34,7 @@ router.post("/register", upload.single("image"), async (req, res) => {
     }
 
     let role = "user";
-    if (email === ADMIN_EMAIL) role = "admin";
+    if (ADMIN_EMAIL.includes(email)) role = "admin";
 
     let image = "";
     let imagePublicId = "";
@@ -215,7 +214,6 @@ router.delete("/delete-user/:id", verifyToken, isAdmin, async (req, res) => {
     res.status(500).json({ message: "Failed to delete user" });
   }
 });
-
 router.post("/forgot-password", async (req, res) => {
   try {
     const { email } = req.body;
@@ -244,19 +242,53 @@ router.post("/forgot-password", async (req, res) => {
 
     await user.save();
 
+    const resetUrl = `http://localhost:5173/auth/new-password/${resetToken}`;
 
-    const resetUrl = `http://localhost:5173/reset-password/${resetToken}`;
+    // ✅ EMAIL SEND
+    await sendEmail(
+      user.email,
+      "Password Reset Request",
+      `Click this link to reset your password:\n\n${resetUrl}\n\nThis link will expire in 15 minutes.`
+    );
 
-    // 🔥 TEMP: console (email baad me lagayenge)
-    console.log("Reset Link:", resetUrl);
-    console.log("Sending email to:", user.email);
     res.json({
-      message: "Reset link sent (check console)",
+      message: "Reset link sent to your email",
     });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Failed to send reset link" });
   }
 });
 
+router.post("/reset-password/:token", async (req, res) => {
+  try {
+    const { password } = req.body;
+
+    const hashedToken = crypto
+      .createHash("sha256")
+      .update(req.params.token)
+      .digest("hex");
+
+    const user = await User.findOne({
+      resetPasswordToken: hashedToken,
+      resetPasswordExpire: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: "Invalid or expired token" });
+    }
+
+    user.password = password;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
+
+    await user.save();
+
+    res.json({ message: "Password reset successfully" });
+
+  } catch (err) {
+    res.status(500).json({ message: "Error resetting password" });
+  }
+});
 module.exports = router;

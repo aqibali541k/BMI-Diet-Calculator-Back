@@ -56,7 +56,8 @@ app.listen(PORT, () => {
 // /* ---------- ROUTES ---------- */
 // // ⚠️ Vercel ke liye path correct
 // const authRouter = require("./routes/User");
-// const notesRouter = require("./routes/Notes");
+// const bmiRouter = require("./routes/Bmi");
+// const blogRouter = require("./routes/Blog");
 
 // /* ---------- MONGODB CONNECTION (CACHED) ---------- */
 // let cached = global.mongoose;
@@ -65,6 +66,8 @@ app.listen(PORT, () => {
 //   cached = global.mongoose = { conn: null, promise: null };
 // }
 
+// const dns = require("node:dns");
+// dns.setServers(["8.8.8.8", "8.8.4.4"]);
 // async function connectDB() {
 //   if (cached.conn) return cached.conn;
 
@@ -84,7 +87,8 @@ app.listen(PORT, () => {
 
 // /* ---------- ROUTES ---------- */
 // app.use("/users", authRouter);
-// app.use("/notes", notesRouter);
+// app.use("/bmi", bmiRouter);
+// app.use("/blogs", blogRouter);
 
 // app.get("/", (req, res) => {
 //   res.send("🚀 Server is online");
