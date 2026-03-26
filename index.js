@@ -60,7 +60,7 @@ app.use(express.json());
 
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://bmigo.vercel.app"], // Removed /
+    origin: ["https://bmigo.vercel.app"], // Removed /
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"]
