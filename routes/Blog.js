@@ -27,23 +27,18 @@ router.post(
         try {
             const { author, title, content } = req.body;
 
-            if (!req.file) {
-                return res.status(400).json({ message: "Image is required" });
+            if (req.file) {
+                await cloudinary.uploader.destroy(blog.imagePublicId);
+
+                const fileStr = req.file.buffer.toString("base64");
+                const result = await cloudinary.uploader.upload(
+                    `data:${req.file.mimetype};base64,${fileStr}`,
+                    { folder: "blogs" }
+                );
+
+                blog.image = result.secure_url;
+                blog.imagePublicId = result.public_id;
             }
-
-            const result = await cloudinary.uploader.upload(req.file.path, {
-                folder: "blogs",
-            });
-
-            const blogEntry = new BMI({
-                userId: req.user.id,
-                author,
-                title,
-                content,
-                image: result.secure_url,
-                imagePublicId: result.public_id,
-                date: new Date(),
-            });
 
             await blogEntry.save();
             res.json({ message: "Blog saved successfully", blog: blogEntry });
