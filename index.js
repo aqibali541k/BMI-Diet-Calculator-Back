@@ -60,7 +60,8 @@ app.use(express.json());
 
 app.use(
   cors({
-    origin: "http://localhost:5173", // abhi ok, frontend URL baad me restrict kar sakta hai
+    origin: ["http://localhost:5173", "https://bmigo.vercel.app/"],
+    credentials: true,
   }),
 );
 
