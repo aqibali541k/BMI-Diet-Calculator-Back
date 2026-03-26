@@ -60,10 +60,13 @@ app.use(express.json());
 
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://bmigo.vercel.app/"],
+    origin: ["http://localhost:5173", "https://bmigo.vercel.app"], // Removed /
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"]
   }),
 );
+
 
 /* ---------- ROUTES ---------- */
 // ⚠️ Vercel ke liye path correct
