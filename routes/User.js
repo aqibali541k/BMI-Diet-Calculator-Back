@@ -6,6 +6,9 @@ const verifyToken = require("../middlewares/verifyToken");
 const cloudinary = require("../middlewares/cloudinary");
 const crypto = require("crypto");
 const sendEmail = require("../config/SendEmail");
+const { OAuth2Client } = require("google-auth-library");
+
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -120,6 +123,67 @@ router.post("/login", async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Login failed" });
+  }
+});
+/* ================= GOOGLE LOGIN ================= */
+
+router.post("/google", async (req, res) => {
+  try {
+    const { token } = req.body;
+
+    if (!token) {
+      return res.status(400).json({ message: "Token is required" });
+    }
+
+    // 🔐 Verify Google Token
+    const ticket = await client.verifyIdToken({
+      idToken: token,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+
+    const { email, name, picture } = payload;
+
+    if (!email) {
+      return res.status(400).json({ message: "Invalid Google account" });
+    }
+
+    // 🔍 Check existing user
+    let user = await User.findOne({ email });
+
+    // 🆕 Create user if not exists
+    if (!user) {
+      let role = "user";
+      if (ADMIN_EMAIL.includes(email)) role = "admin";
+
+      user = await User.create({
+        name,
+        email,
+        password: Math.random().toString(36).slice(-8), // dummy password
+        role,
+        image: picture,
+      });
+    }
+
+    // 🔑 Generate JWT
+    const authToken = jwt.sign(
+      { id: user._id, role: user.role, email: user.email },
+      process.env.JWT_KEY,
+      { expiresIn: "7d" }
+    );
+
+    user.password = undefined;
+
+    res.json({
+      message: "Google login successful",
+      token: authToken,
+      user,
+    });
+
+  } catch (error) {
+    console.error("Google Auth Error:", error);
+    res.status(500).json({ message: "Google authentication failed" });
   }
 });
 
