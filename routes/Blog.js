@@ -7,7 +7,7 @@ const cloudinary = require("../middlewares/cloudinary");
 const multer = require("multer");
 const { ADMIN_EMAIL } = process.env;
 
-const upload = multer({ dest: "uploads/" });
+const upload = multer({ storage: multer.memoryStorage() });
 
 // Admin check middleware
 const isAdmin = (req, res, next) => {
