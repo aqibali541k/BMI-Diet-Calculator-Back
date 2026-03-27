@@ -27,28 +27,41 @@ router.post(
         try {
             const { author, title, content } = req.body;
 
-            if (req.file) {
-                await cloudinary.uploader.destroy(blog.imagePublicId);
+            let imageUrl = "";
+            let imagePublicId = "";
 
+            // ✅ upload image if exists
+            if (req.file) {
                 const fileStr = req.file.buffer.toString("base64");
+
                 const result = await cloudinary.uploader.upload(
                     `data:${req.file.mimetype};base64,${fileStr}`,
                     { folder: "blogs" }
                 );
 
-                blog.image = result.secure_url;
-                blog.imagePublicId = result.public_id;
+                imageUrl = result.secure_url;
+                imagePublicId = result.public_id;
             }
 
+            // ✅ create new blog
+            const blogEntry = new BMI({
+                author,
+                title,
+                content,
+                image: imageUrl,
+                imagePublicId,
+            });
+
             await blogEntry.save();
+
             res.json({ message: "Blog saved successfully", blog: blogEntry });
+
         } catch (err) {
             console.error(err);
             res.status(500).json({ message: "Failed to save blog" });
         }
     }
 );
-
 // ------------------ GET ALL BLOGS ------------------
 router.get("/all-blogs", async (req, res) => {
     try {
