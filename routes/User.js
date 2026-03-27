@@ -12,10 +12,9 @@ const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
-// Admin emails array with trim
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL.split(",").map(email => email.trim());/* ================= ADMIN MIDDLEWARE ================= */
-
-
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL
+  .split(",")          // split comma separated
+  .map(email => email.trim().toLowerCase());  // remove spaces and make lowercase
 const isAdmin = (req, res, next) => {
   if (!ADMIN_EMAIL.includes(req.user.email)) {
     return res.status(403).json({ message: "Admin access only" });
@@ -38,8 +37,7 @@ router.post("/register", upload.single("image"), async (req, res) => {
 
     // Register
     let role = "user";
-    if (ADMIN_EMAIL.includes(email)) role = "admin";
-
+    if (ADMIN_EMAIL.includes(email.toLowerCase())) role = "admin";
     let image = "";
     let imagePublicId = "";
 
@@ -85,6 +83,7 @@ router.post("/register", upload.single("image"), async (req, res) => {
     console.error(err);
     res.status(500).json({ message: "Registration failed" });
   }
+  // console.log("Assigned role:", role); // should print 'admin'
 });
 /* ================= LOGIN ================= */
 
@@ -158,7 +157,7 @@ router.post("/google", async (req, res) => {
 
       // Google login
       let role = "user";
-      if (ADMIN_EMAIL.includes(email)) role = "admin";
+      if (ADMIN_EMAIL.includes(email.toLowerCase())) role = "admin";
       user = await User.create({
         name,
         email,
@@ -188,6 +187,7 @@ router.post("/google", async (req, res) => {
     res.status(500).json({ message: "Google authentication failed" });
   }
 });
+
 
 /* ================= PROFILE ================= */
 
