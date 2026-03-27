@@ -16,7 +16,7 @@ const ADMIN_EMAIL = process.env.ADMIN_EMAIL
   .split(",")          // split comma separated
   .map(email => email.trim().toLowerCase());  // remove spaces and make lowercase
 const isAdmin = (req, res, next) => {
-  if (!ADMIN_EMAIL.includes(req.user.email)) {
+  if (!ADMIN_EMAIL.includes(req.user.email.toLowerCase())) {
     return res.status(403).json({ message: "Admin access only" });
   }
   next();
