@@ -10,58 +10,51 @@ const { ADMIN_EMAIL } = process.env;
 const upload = multer({ storage: multer.memoryStorage() });
 
 // Admin check middleware
+const ADMIN_EMAILS = process.env.ADMIN_EMAIL.split(",");
+
 const isAdmin = (req, res, next) => {
-    if (req.user.email !== ADMIN_EMAIL) {
+    if (!ADMIN_EMAILS.includes(req.user.email)) {
         return res.status(403).json({ message: "Admin access only" });
     }
     next();
 };
 
-// ------------------ CREATE BLOG ------------------
 router.post(
     "/create-blogs",
-    verifyToken,
+    verifyToken,   // <-- attaches req.user
     isAdmin,
     upload.single("image"),
     async (req, res) => {
         try {
             const { author, title, content } = req.body;
 
-            let imageUrl = "";
-            let imagePublicId = "";
+            const blogEntry = new BMI({
+                author,
+                title,
+                content,
+                userId: req.user._id   // <-- required
+            });
 
-            // ✅ upload image if exists
             if (req.file) {
                 const fileStr = req.file.buffer.toString("base64");
-
                 const result = await cloudinary.uploader.upload(
                     `data:${req.file.mimetype};base64,${fileStr}`,
                     { folder: "blogs" }
                 );
 
-                imageUrl = result.secure_url;
-                imagePublicId = result.public_id;
+                blogEntry.image = result.secure_url;
+                blogEntry.imagePublicId = result.public_id;
             }
 
-            // ✅ create new blog
-            const blogEntry = new BMI({
-                author,
-                title,
-                content,
-                image: imageUrl,
-                imagePublicId,
-            });
-
             await blogEntry.save();
-
             res.json({ message: "Blog saved successfully", blog: blogEntry });
-
         } catch (err) {
             console.error(err);
             res.status(500).json({ message: "Failed to save blog" });
         }
     }
 );
+
 // ------------------ GET ALL BLOGS ------------------
 router.get("/all-blogs", async (req, res) => {
     try {
