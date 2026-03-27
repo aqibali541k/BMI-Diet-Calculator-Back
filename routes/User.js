@@ -12,8 +12,8 @@ const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL.split(",");
-/* ================= ADMIN MIDDLEWARE ================= */
+// Admin emails array with trim
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL.split(",").map(email => email.trim());/* ================= ADMIN MIDDLEWARE ================= */
 
 
 const isAdmin = (req, res, next) => {
@@ -36,6 +36,7 @@ router.post("/register", upload.single("image"), async (req, res) => {
       return res.status(400).json({ message: "User already exists" });
     }
 
+    // Register
     let role = "user";
     if (ADMIN_EMAIL.includes(email)) role = "admin";
 
@@ -154,9 +155,10 @@ router.post("/google", async (req, res) => {
 
     // 🆕 Create user if not exists
     if (!user) {
+
+      // Google login
       let role = "user";
       if (ADMIN_EMAIL.includes(email)) role = "admin";
-
       user = await User.create({
         name,
         email,
