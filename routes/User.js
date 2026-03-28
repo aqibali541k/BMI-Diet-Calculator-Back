@@ -260,7 +260,7 @@ router.put(
 
 router.get("/all", verifyToken, isAdmin, async (req, res) => {
   try {
-    const users = await User.find().select("-password");
+    const users = await User.find().select("-password").limit(10).sort({ createdAt: -1 });
 
     res.json({ users });
   } catch (err) {
@@ -308,7 +308,7 @@ router.post("/forgot-password", async (req, res) => {
 
     await user.save();
 
-    const resetUrl = `http://localhost:5173/auth/new-password/${resetToken}`;
+    const resetUrl = `https://bmigo.vercel.app/auth/new-password/${resetToken}`;
 
     // ✅ EMAIL SEND
     await sendEmail(
